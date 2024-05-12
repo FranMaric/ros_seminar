@@ -1,0 +1,8 @@
+prefix=/home/fran/catkin_ws/install
+
+Name: seminar
+Description: Description of seminar
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
