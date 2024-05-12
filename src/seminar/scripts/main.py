@@ -9,7 +9,6 @@ import os
 from math import pi
 import numpy as np
 
-bed_levels = [1, 4, 7]
 
 current_image = None
 
@@ -58,10 +57,10 @@ def set_waypoint(x, y, z, rotation):
     pub.publish(goal)
 
 
-def go_through_one_row():
+def go_through_one_row(x):
     for y in range(3):
         for z in range(3):
-            set_waypoint(13, 6 + y * 7, 1 + z * 3, 0)
+            set_waypoint(x, 6 + y * 7, 1 + z * 3, 0)
             rospy.sleep(6) # time it takes for the drone the get to the waypoint
             save_jpg_image(str(y) + '_' + str(z))
 
@@ -69,22 +68,14 @@ def go_through_one_row():
 def count_red_fruit_in_image(image_filename):
     img = cv2.imread(image_filename)
 
-    # hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
     lower_red = np.array([1,84,160])
     upper_red = np.array([20,211,255])
-
-    # mask = cv2.inRange(hsv, lower_red, upper_red)
-
-    # img = cv2.bitwise_and(img, img, mask=mask)
 
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     gray_blurred_img = cv2.medianBlur(gray_img, 5)
 
     detected_circles = cv2.HoughCircles(gray_blurred_img, cv2.HOUGH_GRADIENT, 0.9, 20, param1 = 50, param2 = 26, minRadius = 5, maxRadius = 40) 
-
-    print(detected_circles)
 
     red_fruit_count = 0
 
@@ -104,15 +95,28 @@ def count_red_fruit_in_image(image_filename):
                 red_fruit_count += 1
                 circle_color = (255, 0, 0)
 
-            # cv2.circle(img, (x, y), r, circle_color, 2) 
+            cv2.circle(img, (x, y), r, circle_color, 2) 
 
-            # cv2.circle(img, (x, y), 1, (0, 0, 255), 3)
+            cv2.circle(img, (x, y), 1, (0, 0, 255), 3)
 
         cv2.imshow("Detected Circle", img)
         cv2.waitKey(0)
 
-    print(red_fruit_count)
+    return red_fruit_count
+
 
 if __name__ == '__main__':
-    # rospy.Subscriber('/red/camera/color/image_raw', Image, image_callback)    
-    count_red_fruit_in_image('/home/fran/catkin_ws/src/seminar/images/camera_image_1_0.jpeg')
+    rospy.Subscriber('/red/camera/color/image_raw', Image, image_callback)
+
+    set_waypoint(1, 1, 1, 0)
+    go_through_one_row(1)
+
+    red_fruit_count = 0
+
+    for root, dirs, files in os.walk('/images'):
+        for file in files:
+            file_path = os.path.join(root, file)
+            
+            red_fruit_count += count_red_fruit_in_image(file_path)
+    
+    print(red_fruit_count)
